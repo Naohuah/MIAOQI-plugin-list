@@ -1,0 +1,38 @@
+{
+  "plugins": [
+    {
+      "repo": "Enigma-Soul/Breeze-plugin-baozimh-plus",
+      "manifest": {
+        "name": "包子漫画 Plus",
+        "uuid": "791a42eb-cfff-4c12-86c4-cf4ce60bb1fe",
+        "iconUrl": "https://www.baozimh.com/favicon.ico",
+        "creator": {
+          "name": "Enigma_Soul",
+          "describe": "包子漫画增强插件"
+        },
+        "describe": "包子漫画增强：翻页预加载、代理模式",
+        "version": "0.5.2",
+        "home": "https://github.com/Enigma-Soul/Breeze-plugin-baozimh-plus",
+        "updateUrl": "https://api.github.com/repos/Enigma-Soul/Breeze-plugin-baozimh-plus/releases/latest",
+        "npmName": "breeze-plugin-baozimh-plus"
+      }
+    },
+    {
+      "repo": "deretame/Breeze-plugin-JmComic",
+      "manifest": {
+        "name": "禁漫天堂",
+        "uuid": "bf99008d-010b-4f17-ac7c-61a9b57dc3d9",
+        "iconUrl": "",
+        "creator": {
+          "name": "deretame",
+          "describe": ""
+        },
+        "describe": "禁漫天堂（JMComic）漫画源",
+        "version": "",
+        "home": "https://github.com/deretame/Breeze-plugin-JmComic",
+        "updateUrl": "https://api.github.com/repos/deretame/Breeze-plugin-JmComic/releases/latest",
+        "npmName": "breeze-plugin-jmcomic"
+      }
+    }
+  ]
+}
