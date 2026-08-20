@@ -13,6 +13,7 @@
 | 文件 | 作用 |
 |---|---|
 | `plugins_data.json` | **市场列表**（核心，App 只读取这个文件） |
+| `plugins/*.cjs` | **第一方插件的 bundle 源码**（通过 `bundleUrl` 直接下载安装） |
 | `README.md` | 本说明 |
 
 > `deretame/Breeze-plugin-list` 仓库还包含 `get-list.js` 等自动收集脚本；
@@ -36,6 +37,7 @@
         "version": "展示版本（可选，实际以 Release tag 为准）",
         "home": "项目主页（可选）",
         "updateUrl": "GitHub releases/latest 地址（可选，用于检查更新）",
+        "bundleUrl": "bundle 直链（可选）——仓库内文件时填 raw 地址，App 直接下载，无需 Release",
         "npmName": "包名（保留字段，可选）"
       }
     }
@@ -46,6 +48,9 @@
 **关键约定**：
 - `repo` 对应一个 **GitHub 仓库**，且该仓库的 **Releases** 里上传了
   `.cjs` 或 `.js` 结尾的 bundle 资产——App 安装时自动寻找该资产下载。
+- **第一方插件**（本仓库 `plugins/` 下的 bundle）在 manifest 里填
+  `bundleUrl`（如 `https://raw.githubusercontent.com/Naohuah/MIAOQI-plugin-list/main/plugins/dm5.cjs`），
+  App 会跳过 Release 解析直接下载该文件安装。
 - `manifest.uuid` 应与插件内部 `getInfo()` 返回的 uuid 一致（App 用它识别
   “已安装”状态、按源管理书架数据）。
 
@@ -53,9 +58,10 @@
 
 ## 如何添加一个插件
 
-1. 插件作者把 bundle 发布到 GitHub 仓库的 Release（tag 如 `1.0.0`，
-   asset 含 `xxx.bundle.cjs`）。
-2. 在本文件 `plugins` 数组里加一条（`repo` + `manifest`）。
+1. 第三方插件：作者把 bundle 发布到 GitHub 仓库的 Release（tag 如 `1.0.0`，
+   asset 含 `xxx.bundle.cjs`），在本文件加一条 `repo` + `manifest`。
+2. 第一方插件：把 bundle 放到本仓库 `plugins/` 目录（如 `plugins/dm5.cjs`），
+   在 manifest 里填 `bundleUrl` 指向该文件的 raw 地址。
 3. 提交并推送，市场即刻生效（App 端点击刷新即可看到）。
 
 ## 如何发布你的市场
