@@ -165,6 +165,9 @@ async function getComicDetail(args) {
 async function getChapter(args) {
   const comicId = String(args.comicId || '');
   const chapterId = String(args.chapterId || '');
+  if (!chapterId) {
+    throw new Error('章节 ID 为空，请返回详情页重新选择章节');
+  }
   const url = BASE + '/m' + chapterId + '/';
   const html = await getText(url);
 
