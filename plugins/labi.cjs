@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.1',
+    version: '1.0.2',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -106,6 +106,38 @@ async function searchComic(args) {
     });
   });
   return { items: items, paging: { hasReachedMax: true } };
+}
+
+// 章节数字解析——站点章节名有多个格式：
+//   '第131回 卑鄙的联手（上）'、'299 金刚天精皇'、'第10.5话'、'第一百二十四话'
+// 解析不出数字的（如'公告'）返回 null，排序时落到尾部。
+function cjkNum(s) {
+  const d = { 零: 0, 〇: 0, 一: 1, 二: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  let total = 0;
+  let m = s.match(/^([零〇一二三四五六七八九]*)百/);
+  if (m) {
+    total += (m[1] ? d[m[1]] || 0 : 1) * 100;
+    s = s.slice(m[0].length);
+  }
+  m = s.match(/^([零〇一二三四五六七八九]*)十/);
+  if (m) {
+    total += (m[1] ? d[m[1]] || 0 : 1) * 10;
+    s = s.slice(m[0].length);
+  }
+  if (s.length === 1 && d[s] != null) total += d[s];
+  return total;
+}
+
+function chapterNum(name) {
+  if (!name) return null;
+  const s = String(name).trim();
+  let m = s.match(/第\s*(\d+(?:\.\d+)?)\s*(?:话|章|回)/);
+  if (m) return parseFloat(m[1]);
+  m = s.match(/^(\d+(?:\.\d+)?)/);
+  if (m) return parseFloat(m[1]);
+  m = s.match(/第\s*([零〇一二三四五六七八九十百千]+)\s*(?:话|章|回)/);
+  if (m) return cjkNum(m[1]);
+  return null;
 }
 
 async function fetchDetail(comicId) {
@@ -145,15 +177,12 @@ async function fetchDetail(comicId) {
     eps.push({ id: m[1], name: name, order: eps.length });
   });
 
-  // 站点列表按倒序渲染（第4话在前）。章节名通常是 '第N话/章/回'，
-  // 有数字就按数字正序排列，保证上一话/下一话顺序正确。
+  // 站点列表按倒序渲染（最新在前）。章节名有 '第N话/章/回'、'N 标题'、
+  // '第N.5话'、中文数字等多种格式，统一按数字正序排列，保证上一话/
+  // 下一话方向正确；无数字的（公告等）保持源序落在尾部。
   const numbered = eps
-    .map((c, i) => ({
-      c: c,
-      num: (c.name.match(/第\s*(\d+)\s*(?:话|章|回)/) || [])[1],
-      i: i,
-    }))
-    .map((r) => ({ c: r.c, key: r.num ? parseInt(r.num, 10) : r.i + 100000 }))
+    .map((c, i) => ({ c: c, num: chapterNum(c.name), i: i }))
+    .map((r) => ({ c: r.c, key: r.num != null ? r.num : r.i + 100000 }))
     .sort((a, b) => a.key - b.key)
     .map((r, i) => {
       r.c.order = i;
