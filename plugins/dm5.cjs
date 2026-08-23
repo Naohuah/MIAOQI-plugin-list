@@ -34,6 +34,8 @@ function clean(s) {
 
 // 章节列表缓存：comicId -> eps（宿主 runtime 跨调用持久，避免每次翻话重抓详情页）
 const epsCache = {};
+// 漫画名缓存：comicId -> title（getChapter 返回 comic.title 供阅读器头部显示）
+const titleCache = {};
 
 async function getInfo() {
   return {
@@ -159,6 +161,7 @@ async function getComicDetail(args) {
   const comicId = String(args.comicId || '');
   const detail = await fetchDetail(comicId);
   epsCache[comicId] = detail.data.normal.eps;
+  titleCache[comicId] = detail.data.normal.comicInfo.title || '';
   return detail;
 }
 
@@ -263,6 +266,7 @@ async function getChapter(args) {
       const detail = await fetchDetail(comicId);
       eps = detail.data.normal.eps;
       epsCache[comicId] = eps;
+      titleCache[comicId] = detail.data.normal.comicInfo.title || '';
     } catch (e) {
       eps = [];
     }
@@ -280,7 +284,7 @@ async function getChapter(args) {
   return {
     comicId: comicId,
     data: {
-      comic: { id: comicId, title: '' },
+      comic: { id: comicId, title: titleCache[comicId] || '' },
       chapter: { id: chapterId, name: chapterName, pages: pages },
       chapters: eps,
     },
