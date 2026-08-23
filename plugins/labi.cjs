@@ -225,10 +225,24 @@ async function fetchImageBytes(args) {
   return new Uint8Array(buf);
 }
 
+// 无自定义设置/能力项——返回空（Breeze 协议要求，避免宿主报 Missing function）
+async function getSettingsBundle() {
+  return {
+    scheme: { type: 'settingsVersion', sections: [] },
+    data: { values: {} },
+  };
+}
+
+async function getCapabilitiesBundle() {
+  return { scheme: { type: 'capabilities', actions: [] } };
+}
+
 module.exports = {
   getInfo,
   searchComic,
   getComicDetail,
   getChapter,
   fetchImageBytes,
+  getSettingsBundle,
+  getCapabilitiesBundle,
 };
