@@ -76,6 +76,21 @@
 
 ---
 
+## 更多 Breeze 插件
+
+App 的市场 URL 可以是**任意兼容的 Breeze 插件列表**。官方的 Breeze 索引收录了
+17 个现成插件（禁漫天堂 / 哔咔漫画 / 拷贝漫画 / 漫画柜 / 如漫画 / 绅士漫画 /
+蛙漫 / e-hentai / nhentai / Toomics / WEBTOON 等），在 App 的「插件市场」输入框填入：
+
+```
+https://raw.githubusercontent.com/deretame/Breeze-plugin-list/main/plugins_data.json
+```
+
+点「加载」即可浏览安装（这些插件需要在 App 端正确初始化宿主桥，详见
+`PLUGIN_MARKET_README.md`）。注意：其中成人向网站（e-hentai、nhentai 等）请按需选用。
+
+---
+
 ## 插件开发（Breeze 协议）
 
 插件是打包成单个 `.cjs` 的 JavaScript，需实现：

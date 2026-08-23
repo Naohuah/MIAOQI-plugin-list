@@ -172,6 +172,7 @@ async function getChapter(args) {
   const html = await getText(url);
 
   const pages = [];
+  const seenUrls = new Set();
 
   // 章节页内联变量
   const varValue = function (name) {
@@ -208,8 +209,11 @@ async function getChapter(args) {
       const body = await getText(api);
       const urls = evalChapterfun(body);
       if (!urls || urls.length === 0) break;
+      let newCount = 0;
       for (const u of urls) {
-        if (typeof u !== 'string' || !u) continue;
+        if (typeof u !== 'string' || !u || seenUrls.has(u)) continue;
+        seenUrls.add(u);
+        newCount++;
         pages.push({
           id: String(pages.length + 1),
           name: String(pages.length + 1),
@@ -217,14 +221,26 @@ async function getChapter(args) {
           url: u,
         });
       }
+      // 整页都是重复图（VIP 占位/接口固定返回）→ 停止翻页
+      if (newCount === 0) break;
       // 学习图片域名的 Referer headers，让宿主后续对同域名图片用 Dart 直连
-      if (urls.length > 0) {
-        try {
-          await fetch(urls[0], { headers: headers() });
-        } catch (e) {}
-      }
+      try {
+        await fetch(urls[0], { headers: headers() });
+      } catch (e) {}
       if (imgCount > 0 && pages.length >= imgCount) break;
     }
+  }
+
+  // VIP 付费章节：chapterfun 只返回占位图（images/war.jpg 等），
+  // 此时唯一 URL 极少且指向占位图——给出友好提示而不是重复刷图
+  if (pages.length > 0 && seenUrls.size <= 1) {
+    const only = pages[0].url;
+    if (/\/images\//.test(only) || /war\.jpg/.test(only)) {
+      throw new Error('该章节为 VIP 付费章节，暂不支持在线观看，请到 dm5.com 查看');
+    }
+  }
+  if (pages.length === 0) {
+    throw new Error('未获取到章节图片，可能为付费章节或页面结构已变化');
   }
 
   // 章节列表：优先缓存，miss 时抓详情页
