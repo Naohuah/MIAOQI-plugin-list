@@ -1,6 +1,6 @@
 # MIAOQI 插件市场（plugin-market）
 
-这是 **MIAOQI 漫画阅读器** 自有的插件市场仓库（参考
+这是 **MIAOQI 轻量漫画阅读器** 自有的插件市场仓库（参考
 [deretame/Breeze-plugin-list](https://github.com/deretame/Breeze-plugin-list) 的
 结构与协议）。把本目录发布为一个 GitHub 仓库后，用户即可在 App 的
 “设置 → 插件源 → 插件市场”中填入该仓库的 `plugins_data.json` 地址来浏览、
@@ -76,9 +76,9 @@
 
 ---
 
-## 更多 Breeze 插件
+## 选择 Breeze 插件
 
-App 的市场 URL 可以是**任意兼容的 Breeze 插件列表**。官方的 Breeze 索引收录了
+本App 的市场 URL 可以是**任意兼容的 Breeze 插件列表**。官方的 Breeze 索引收录了
 17 个现成插件（禁漫天堂 / 哔咔漫画 / 拷贝漫画 / 漫画柜 / 如漫画 / 绅士漫画 /
 蛙漫 / e-hentai / nhentai / Toomics / WEBTOON 等），在 App 的「插件市场」输入框填入：
 
