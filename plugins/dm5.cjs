@@ -14,6 +14,15 @@ const UA_CRAWLER =
 
 const UUID = 'd3f5a1e2-8b4c-4a7d-9e6f-2c1b0a9d8e7f';
 
+// 兼容缺失前导斜杠的 id（历史数据/第三方调用），避免 BASE+id 拼出
+// 'dm5.com/manhua-xxx' 直接连 http 的错误（缺斜杠会变子域）。
+function normalizeIdForHost(id) {
+  if (!id) return '';
+  const s = String(id).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  return s.startsWith('/') ? s : '/' + s;
+}
+
 function headers(extra) {
   const h = { 'User-Agent': UA, 'Referer': REFERER };
   if (extra) {
@@ -90,7 +99,8 @@ async function searchComic(args) {
 }
 
 async function fetchDetail(comicId) {
-  const url = comicId.indexOf('http') === 0 ? comicId : BASE + comicId;
+  const id = normalizeIdForHost(comicId);
+  const url = id.indexOf('http') === 0 ? id : BASE + id;
   const html = await getText(url, { 'User-Agent': UA_CRAWLER });
   const $ = globalThis.BreezeHtml.load(html);
 
