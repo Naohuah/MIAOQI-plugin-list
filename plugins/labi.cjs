@@ -41,6 +41,16 @@ function clean(s) {
   return String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
 }
 
+// 2026 改版后漫画 id 是加密串（如 'QV3enODklj'），且历史数据里可能缺
+// 前导 '/'（如旧数字 id '624076'）——统一规范为带前导斜杠的相对路径，
+// 避免 BASE+id 拼出 'www.labimanhua.com624076' 这类 DNS 级错误。
+function normalizeIdForHost(id) {
+  if (!id) return '';
+  const s = String(id).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  return s.startsWith('/') ? s : '/' + s;
+}
+
 // 章节列表缓存：comicId -> eps
 const epsCache = {};
 // 漫画名缓存：comicId -> title（getChapter 返回 comic.title 供阅读器头部显示）
@@ -63,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.0',
+    version: '1.0.1',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -99,24 +109,56 @@ async function searchComic(args) {
 }
 
 async function fetchDetail(comicId) {
-  const url = comicId.indexOf('http') === 0 ? comicId : BASE + comicId;
+  const id = normalizeIdForHost(comicId);
+  const url = id.indexOf('http') === 0 ? id : BASE + id;
   const html = await getText(url);
   const $ = globalThis.BreezeHtml.load(html);
 
   const title = clean($('article h1').first().text());
+  // 站点 404/下架会返回 200 + '温馨提示' 页（旧数字 id 改版后全部失效）。
+  if (title === '温馨提示') {
+    throw new Error('漫画不存在或已下架（旧链接已失效），请在蜡笔源重新搜索添加');
+  }
   const cover = $('figure img').first().attr('src') || '';
   const author = (html.match(/<strong>作者:<\/strong>\s*([^<]{1,40})/) || [])[1] || '';
   const status = (html.match(/<strong>状态:<\/strong>\s*([^<]{1,40})/) || [])[1] || '';
 
+  // 2026 站点改版：章节列表从 #chapter-grid 换成 main 内 ul.grid 章节网格
+  // （多话漫画全部章节都在这一页，如 71 话的封魔奇谭）。只收章节网格的
+  // '.html' 链接，排除 '开始阅读' 按钮（它也是第01话，会抢占 id 去重）。
   const eps = [];
-  $('#chapter-grid li a[href^="/"]').each(function () {
+  const seen = new Set();
+  let gridLinks = $('ul.grid a[href$=".html"]');
+  if (gridLinks.length === 0) {
+    // 兜底：网格结构再变化时退回全页收集，但跳过 '开始阅读' 按钮。
+    gridLinks = $('a[href$=".html"]').filter(function () {
+      return clean($(this).text()) !== '开始阅读';
+    });
+  }
+  gridLinks.each(function () {
     const href = $(this).attr('href') || '';
     const m = href.match(/\/([A-Za-z0-9]{6,14})\.html$/);
-    if (!m) return;
-    const name = clean($(this).text());
+    if (!m || seen.has(m[1])) return;
+    const name = clean($(this).text()) || clean($(this).attr('title'));
     if (!name) return;
+    seen.add(m[1]);
     eps.push({ id: m[1], name: name, order: eps.length });
   });
+
+  // 站点列表按倒序渲染（第4话在前）。章节名通常是 '第N话/章/回'，
+  // 有数字就按数字正序排列，保证上一话/下一话顺序正确。
+  const numbered = eps
+    .map((c, i) => ({
+      c: c,
+      num: (c.name.match(/第\s*(\d+)\s*(?:话|章|回)/) || [])[1],
+      i: i,
+    }))
+    .map((r) => ({ c: r.c, key: r.num ? parseInt(r.num, 10) : r.i + 100000 }))
+    .sort((a, b) => a.key - b.key)
+    .map((r, i) => {
+      r.c.order = i;
+      return r.c;
+    });
 
   const metadata = [];
   if (author) metadata.push({ name: '作者', value: [{ name: author }] });
@@ -135,7 +177,7 @@ async function fetchDetail(comicId) {
           metadata: metadata,
           extern: { status: status === '已完结' ? 'completed' : 'ongoing' },
         },
-        eps: eps,
+        eps: numbered,
       },
     },
   };
@@ -151,13 +193,14 @@ async function getComicDetail(args) {
 
 async function getChapter(args) {
   const comicId = String(args.comicId || '');
-  const chapterId = String(args.chapterId || '');
+  const chapterId = String(args.chapterId || '').replace(/^\//, '');
   if (!chapterId) {
     throw new Error('章节 ID 为空，请返回详情页重新选择章节');
   }
-  const url = comicId.indexOf('http') === 0
-    ? comicId + '/' + chapterId + '.html'
-    : BASE + comicId + '/' + chapterId + '.html';
+  const id = normalizeIdForHost(comicId);
+  const url = id.indexOf('http') === 0
+    ? id + '/' + chapterId + '.html'
+    : BASE + id + '/' + chapterId + '.html';
   const html = await getText(url);
 
   const pages = [];
@@ -169,10 +212,15 @@ async function getChapter(args) {
         ? data.images_hosts[0]
         : '';
       const imgs = data.chapter_images || [];
+      // 2026 改版：章节图片文件名为 base64url 串（images_base64 标记是否
+      // 需要再编码一次），直接 host + '/' + 文件名。
+      const base64Names = data.images_base64 === true;
       for (let i = 0; i < imgs.length; i++) {
         const p = imgs[i];
         if (!p) continue;
-        const imgUrl = /^https?:\/\//.test(p) ? p : host + '/' + p;
+        const imgUrl = /^https?:\/\//.test(p)
+          ? p
+          : host + '/' + (base64Names ? Buffer.from(p, 'utf8').toString('base64') : p);
         pages.push({
           id: String(i + 1),
           name: String(i + 1),
