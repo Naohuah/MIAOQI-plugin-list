@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.2',
+    version: '1.0.3',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -154,6 +154,19 @@ async function fetchDetail(comicId) {
   const cover = $('figure img').first().attr('src') || '';
   const author = (html.match(/<strong>作者:<\/strong>\s*([^<]{1,40})/) || [])[1] || '';
   const status = (html.match(/<strong>状态:<\/strong>\s*([^<]{1,40})/) || [])[1] || '';
+  // 简介：详情页 article 内 'line-clamp-4' 段落（text() 已去 HTML 标签）。
+  // 选择器逐级降级，避免站点结构调整后简介静默丢失。
+  let description = '';
+  const descEl = $('article p.line-clamp-4').first();
+  if (descEl.length > 0) {
+    description = clean(descEl.text());
+  } else {
+    // 作者/题材/状态行都带 <strong>，简介是唯一纯文本段落。
+    const fallback = $('article .flex-grow p').filter(function () {
+      return $(this).find('strong').length === 0;
+    }).first();
+    if (fallback.length > 0) description = clean(fallback.text());
+  }
 
   // 2026 站点改版：章节列表从 #chapter-grid 换成 main 内 ul.grid 章节网格
   // （多话漫画全部章节都在这一页，如 71 话的封魔奇谭）。只收章节网格的
@@ -201,7 +214,7 @@ async function fetchDetail(comicId) {
         comicInfo: {
           title: title,
           creator: { name: author },
-          description: '',
+          description: description,
           cover: { url: cover },
           metadata: metadata,
           extern: { status: status === '已完结' ? 'completed' : 'ongoing' },
