@@ -188,10 +188,10 @@ async function getChapter(args) {
   const imgCount = parseInt(varValue('DM5_IMAGE_COUNT'), 10) || 0;
 
   // 图片直链不再内联：通过 chapterfun.ashx 分页获取（响应为 JS 代码，
-  // 执行后 d 为图片 URL 数组，每页 2 张）
+  // 执行后 d 为图片 URL 数组，每页 2 张）。并发抓取（每次 6 页）加快加载。
   if (cid && vsign) {
     const maxPages = (imgCount > 0 ? Math.ceil(imgCount / 2) : 40) + 1;
-    for (let p = 1; p <= maxPages; p++) {
+    const fetchPage = async function (p) {
       const api =
         BASE +
         '/chapterfun.ashx?cid=' +
@@ -207,27 +207,40 @@ async function getChapter(args) {
         '&_sign=' +
         vsign;
       const body = await getText(api);
-      const urls = evalChapterfun(body);
-      if (!urls || urls.length === 0) break;
-      let newCount = 0;
-      for (const u of urls) {
-        if (typeof u !== 'string' || !u || seenUrls.has(u)) continue;
-        seenUrls.add(u);
-        newCount++;
-        pages.push({
-          id: String(pages.length + 1),
-          name: String(pages.length + 1),
-          path: '',
-          url: u,
-        });
+      return evalChapterfun(body) || [];
+    };
+    const CONCURRENCY = 6;
+    let p = 1;
+    outer: while (p <= maxPages) {
+      const batch = [];
+      for (let i = 0; i < CONCURRENCY && p <= maxPages; i++, p++) {
+        batch.push(fetchPage(p));
       }
-      // 整页都是重复图（VIP 占位/接口固定返回）→ 停止翻页
-      if (newCount === 0) break;
-      // 学习图片域名的 Referer headers，让宿主后续对同域名图片用 Dart 直连
-      try {
-        await fetch(urls[0], { headers: headers() });
-      } catch (e) {}
-      if (imgCount > 0 && pages.length >= imgCount) break;
+      const results = await Promise.all(batch);
+      for (const urls of results) {
+        if (!urls || urls.length === 0) break outer;
+        let newCount = 0;
+        for (const u of urls) {
+          if (typeof u !== 'string' || !u || seenUrls.has(u)) continue;
+          seenUrls.add(u);
+          newCount++;
+          pages.push({
+            id: String(pages.length + 1),
+            name: String(pages.length + 1),
+            path: '',
+            url: u,
+          });
+        }
+        // 学习图片域名的 Referer headers（首批即可）
+        if (newCount > 0) {
+          try {
+            await fetch(urls[0], { headers: headers() });
+          } catch (e) {}
+        }
+        // 整页都是重复图（VIP 占位/接口固定返回）→ 停止翻页
+        if (newCount === 0) break outer;
+        if (imgCount > 0 && pages.length >= imgCount) break outer;
+      }
     }
   }
 
