@@ -61,7 +61,7 @@
           "describe": ""
         },
         "describe": "labimanhua.com 蜡笔漫画源：搜索、详情、阅读（AES 解密）",
-        "version": "1.0.4",
+        "version": "1.0.5",
         "home": "https://github.com/Naohuah/MIAOQI-plugin-list",
         "bundleUrl": "https://cdn.jsdelivr.net/gh/Naohuah/MIAOQI-plugin-list@main/plugins/labi.cjs"
       }

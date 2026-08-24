@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.4',
+    version: '1.0.5',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -131,9 +131,15 @@ function cjkNum(s) {
 function chapterNum(name) {
   if (!name) return null;
   const s = String(name).trim();
+  // 章节号（仅明确编号格式，勿把标题里的数字误当章节号）：
+  //   '第N话/章/回'、'299 金刚天精皇'(数字+空格)、'12话'、'01'(纯数字)
   let m = s.match(/第\s*(\d+(?:\.\d+)?)\s*(?:话|章|回)/);
   if (m) return parseFloat(m[1]);
-  m = s.match(/^(\d+(?:\.\d+)?)/);
+  m = s.match(/^(\d+(?:\.\d+)?)\s*$/); // 纯数字章节名
+  if (m) return parseFloat(m[1]);
+  m = s.match(/^(\d+(?:\.\d+)?)\s+(?=\S)/); // 数字+空格+标题
+  if (m) return parseFloat(m[1]);
+  m = s.match(/^(\d+(?:\.\d+)?)\s*(?:话|章|回)/); // '12话'
   if (m) return parseFloat(m[1]);
   m = s.match(/第\s*([零〇一二三四五六七八九十百千]+)\s*(?:话|章|回)/);
   if (m) return cjkNum(m[1]);
