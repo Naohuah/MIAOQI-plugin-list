@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.3',
+    version: '1.0.4',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -137,6 +137,10 @@ function chapterNum(name) {
   if (m) return parseFloat(m[1]);
   m = s.match(/第\s*([零〇一二三四五六七八九十百千]+)\s*(?:话|章|回)/);
   if (m) return cjkNum(m[1]);
+  // 追加章节（番外 / 特别篇 / 外传 / SP 等）常带数字但不是"第N话"格式：
+  // 排到正常章节之后（+1000），且按各自数字有序，避免这类章节乱序。
+  m = s.match(/(?:番外|特别篇|外传|SP|special|卷|extra)\s*(\d+)/i);
+  if (m) return 1000 + parseFloat(m[1]);
   return null;
 }
 

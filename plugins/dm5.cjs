@@ -50,7 +50,7 @@ async function getInfo() {
   return {
     name: 'DM5 动漫屋',
     uuid: UUID,
-    version: '1.0.0',
+    version: '1.0.1',
     describe: 'dm5.com 动漫屋漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.dm5.com/',
@@ -203,7 +203,9 @@ async function getChapter(args) {
   // 图片直链不再内联：通过 chapterfun.ashx 分页获取（响应为 JS 代码，
   // 执行后 d 为图片 URL 数组，每页 2 张）。并发抓取（每次 6 页）加快加载。
   if (cid && vsign) {
-    const maxPages = (imgCount > 0 ? Math.ceil(imgCount / 2) : 40) + 1;
+    // 不上限过窄：长章节（超 150 图）不能被 Math.ceil(imgCount/2) 截断。
+    // 用宽松上限，靠"整批无新增页"或达到 imgCount 饱和来停。
+    const maxPages = 500;
     const fetchPage = async function (p) {
       const api =
         BASE +
@@ -224,6 +226,7 @@ async function getChapter(args) {
     };
     const CONCURRENCY = 6;
     let p = 1;
+    let emptyStreak = 0;
     outer: while (p <= maxPages) {
       const batch = [];
       for (let i = 0; i < CONCURRENCY && p <= maxPages; i++, p++) {
@@ -231,7 +234,14 @@ async function getChapter(args) {
       }
       const results = await Promise.all(batch);
       for (const urls of results) {
-        if (!urls || urls.length === 0) break outer;
+        // 单页偶发为空不立即断链：连续 2 个空页才视为翻页结束
+        // （避免某个网络失败导致后半章节缺失"显示不全"）。
+        if (!urls || urls.length === 0) {
+          emptyStreak++;
+          if (emptyStreak >= 2) break outer;
+          continue;
+        }
+        emptyStreak = 0;
         let newCount = 0;
         for (const u of urls) {
           if (typeof u !== 'string' || !u || seenUrls.has(u)) continue;
@@ -252,8 +262,31 @@ async function getChapter(args) {
         }
         // 整页都是重复图（VIP 占位/接口固定返回）→ 停止翻页
         if (newCount === 0) break outer;
-        if (imgCount > 0 && pages.length >= imgCount) break outer;
+        // 不依赖 DM5_IMAGE_COUNT 截断：该值偶发偏小会造成"显示不全"。
+        // 靠连续空页（emptyStreak>=2）自然结束，取全该章所有图。
       }
+    }
+  }
+
+  // 学习每个图片域名的 Referer headers：DM5 章节图分布在多个 CDN 域
+  // （*.cdndm5.com 等），若只学 urls[0] 的域，其它域的图会 403 导致
+  // "显示不全"。逐域学习，宿主 Dart 直连时才带对 Referer。
+  if (pages.length > 0) {
+    const hostSet = new Set();
+    for (const pg of pages) {
+      try {
+        const h = new URL(pg.url).hostname;
+        if (h && !hostSet.has(h)) hostSet.add(h);
+      } catch (e) {}
+    }
+    for (const h of hostSet) {
+      const sample = pages.find((p) => {
+        try { return new URL(p.url).hostname === h; } catch (e) { return false; }
+      });
+      if (!sample) continue;
+      try {
+        await fetch(sample.url, { headers: headers() });
+      } catch (e) {}
     }
   }
 
