@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.5',
+    version: '1.0.7',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',
@@ -178,14 +178,15 @@ async function fetchDetail(comicId) {
     if (fallback.length > 0) description = clean(fallback.text());
   }
 
-  // 2026 站点改版：章节列表从 #chapter-grid 换成 main 内 ul.grid 章节网格
-  // （多话漫画全部章节都在这一页，如 71 话的封魔奇谭）。只收章节网格的
-  // '.html' 链接，排除 '开始阅读' 按钮（它也是第01话，会抢占 id 去重）。
+  // 2026 站点改版：完整章节列表在 <ul id="chapter-grid">（官网"章节目录"），
+  // **本身是正序**（第1话在前，如《我真没想重生》：预告、上线前预热…）。
+  // 之前误抓了"最新章节"（倒序的 ul.grid）才需要排序，反而把纯标题书排乱。
+  // 现在直接抓 #chapter-grid，按官网目录原样（正序）返回——无需排序。
   const eps = [];
   const seen = new Set();
-  let gridLinks = $('ul.grid a[href$=".html"]');
+  let gridLinks = $('#chapter-grid li a[href$=".html"]');
   if (gridLinks.length === 0) {
-    // 兜底：网格结构再变化时退回全页收集，但跳过 '开始阅读' 按钮。
+    // 兜底：结构变化时退回全页收集，但跳过 '开始阅读' 按钮。
     gridLinks = $('a[href$=".html"]').filter(function () {
       return clean($(this).text()) !== '开始阅读';
     });
@@ -200,17 +201,7 @@ async function fetchDetail(comicId) {
     eps.push({ id: m[1], name: name, order: eps.length });
   });
 
-  // 站点列表按倒序渲染（最新在前）。章节名有 '第N话/章/回'、'N 标题'、
-  // '第N.5话'、中文数字等多种格式，统一按数字正序排列，保证上一话/
-  // 下一话方向正确；无数字的（公告等）保持源序落在尾部。
-  const numbered = eps
-    .map((c, i) => ({ c: c, num: chapterNum(c.name), i: i }))
-    .map((r) => ({ c: r.c, key: r.num != null ? r.num : r.i + 100000 }))
-    .sort((a, b) => a.key - b.key)
-    .map((r, i) => {
-      r.c.order = i;
-      return r.c;
-    });
+  const numbered = eps;
 
   const metadata = [];
   if (author) metadata.push({ name: '作者', value: [{ name: author }] });
