@@ -73,7 +73,7 @@ async function getInfo() {
   return {
     name: '蜡笔漫画',
     uuid: UUID,
-    version: '1.0.7',
+    version: '0.0.7',
     describe: 'labimanhua.com 蜡笔漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.labimanhua.com/',

@@ -96,7 +96,7 @@
     return {
       name: '禁漫天堂',
       uuid: UUID,
-      version: '1.0.0',
+      version: '0.0.1',
       describe: '禁漫漫画源（作者 Naohuah）。支持搜索/详情/章节/长图拼接。',
       iconUrl: '',
     };

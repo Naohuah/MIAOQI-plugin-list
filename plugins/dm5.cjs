@@ -50,7 +50,7 @@ async function getInfo() {
   return {
     name: 'DM5 动漫屋',
     uuid: UUID,
-    version: '1.0.1',
+    version: '0.0.1',
     describe: 'dm5.com 动漫屋漫画源：搜索、详情、阅读',
     iconUrl: '',
     home: 'https://www.dm5.com/',
