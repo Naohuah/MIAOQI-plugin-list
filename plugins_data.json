@@ -18,19 +18,20 @@
       }
     },
     {
-      "repo": "Naohuah/MIAOQI-plugin-list",
+      "repo": "deretame/Breeze-plugin-JmComic",
       "manifest": {
         "name": "禁漫天堂",
         "uuid": "bf99008d-010b-4f17-ac7c-61a9b57dc3d9",
-        "iconUrl": "https://raw.githubusercontent.com/Naohuah/MIAOQI-plugin-list/main/plugins/jmcomic_naohuah.webp",
+        "iconUrl": "https://cdn.jsdelivr.net/gh/deretame/Breeze-plugin-JmComic@main/assets/fO.webp",
         "creator": {
-          "name": "Naohuah",
-          "describe": "禁漫天堂"
+          "name": "deretame",
+          "describe": ""
         },
-        "describe": "禁漫天堂（JMComic）漫画源 —— 搜索/详情/章节/出图",
-        "version": "0.0.1",
-        "home": "https://github.com/Naohuah/MIAOQI-plugin-list",
-        "bundleUrl": "https://raw.githubusercontent.com/Naohuah/MIAOQI-plugin-list/main/plugins/jmcomic_naohuah.cjs"
+        "describe": "禁漫天堂（JMComic）漫画源",
+        "version": "0.0.7",
+        "home": "https://github.com/deretame/Breeze-plugin-JmComic",
+        "updateUrl": "https://api.github.com/repos/deretame/Breeze-plugin-JmComic/releases/latest",
+        "npmName": "breeze-plugin-jmcomic"
       }
     },
     {
