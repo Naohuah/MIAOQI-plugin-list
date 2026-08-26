@@ -22,7 +22,7 @@
       "manifest": {
         "name": "禁漫天堂",
         "uuid": "bf99008d-010b-4f17-ac7c-61a9b57dc3d9",
-        "iconUrl": "https://cdn.jsdelivr.net/gh/Naohuah/MIAOQI-plugin-list@main/plugins/jmcomic_naohuah.png",
+        "iconUrl": "https://raw.githubusercontent.com/Naohuah/MIAOQI-plugin-list/main/plugins/jmcomic_naohuah.webp",
         "creator": {
           "name": "Naohuah",
           "describe": "禁漫天堂"
